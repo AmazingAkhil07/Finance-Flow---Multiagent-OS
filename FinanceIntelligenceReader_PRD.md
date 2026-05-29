@@ -10,7 +10,7 @@
 
 ### 🚀 Recent Updates (v1.2)
 - **Database Migration:** Fully migrated from local SQLite to **Neon PostgreSQL** for Vercel serverless compatibility.
-- **100% Real Data:** Completely removed mock fallback generation. Integrated robust Google News RSS aggregators to bypass strict bot protections (e.g., Seeking Alpha, Value Research).
+- **100% Real Data & Monthly Research Fix:** Completely removed mock fallback generation. Integrated robust Google News RSS aggregators to bypass strict bot protections, which successfully fixed the silent database collision bug that was causing the Monthly Research page to appear empty.
 - **Real-Time Market Ticker:** Replaced static ticker with a live Yahoo Finance API proxy polling real-time asset data (NIFTY, SENSEX, AAPL, BTC, etc.) with a seamless, infinite CSS scroll architecture.
 
 ---
