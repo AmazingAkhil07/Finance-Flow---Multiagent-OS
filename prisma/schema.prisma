@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id           String     @id @default(cuid())
+  title        String
+  source       String
+  sourceURL    String     @unique
+  summary      String?
+  author       String?
+  imageURL     String?
+  publishedAt  DateTime
+  category     String     // "daily" | "deep-dive" | "monthly" | "learning"
+  tags         String     // JSON serialized array of strings since SQLite doesn't support String[]
+  readTime     Int?       // minutes
+  fetchedAt    DateTime   @default(now())
+  
+  // Custom metadata for advanced sections
+  difficulty   String?    // "Beginner" | "Intermediate" | "Advanced"
+  learningPath String?    // "Stock Trading 101", etc.
+  pdfURL       String?    // PDF download link if applicable
+  views        Int        @default(0)
+  saves        Int        @default(0)
+  
+  bookmarks   Bookmark[]
+  
+  @@index([category])
+  @@index([publishedAt])
+  @@index([source])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  folder    String   @default("To Read Later")
+  isRead    Boolean  @default(false)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  savedAt   DateTime @default(now())
+  
+  @@unique([userId, articleId])
+  @@index([userId])
+}
+
+model FeedSource {
+  id       String  @id @default(cuid())
+  name     String  @unique // "moneycontrol", "et-markets", etc.
+  rssURL   String
+  category String
+  isActive Boolean @default(true)
+}

@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-finance-primary: #fbbf24;
+  --color-finance-secondary: #2dd4bf;
+  --color-finance-danger: #f43f5e;
+  --color-finance-surface: rgba(15, 23, 42, 0.45);
+  --color-finance-surface-hover: rgba(30, 41, 59, 0.6);
+  --color-finance-border: rgba(255, 255, 255, 0.08);
+  --color-finance-border-hover: rgba(251, 191, 36, 0.3);
+  
+  --font-outfit: var(--font-outfit);
+  --font-space-grotesk: var(--font-space-grotesk);
+
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+
+  * {
+    border-color: var(--color-finance-border);
+  }
+
+  body {
+    background-color: #060a10;
+    color: var(--foreground);
+    background-image: 
+      linear-gradient(to bottom, rgba(6, 10, 16, 0.8), rgba(6, 10, 16, 0.95)),
+      url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=2560&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-[rgba(15,23,42,0.45)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)];
+  }
+  .glass-panel-hover {
+    @apply hover:bg-[rgba(30,41,59,0.6)] hover:border-[rgba(251,191,36,0.3)] transition-all duration-300;
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-200;
+  }
+}
