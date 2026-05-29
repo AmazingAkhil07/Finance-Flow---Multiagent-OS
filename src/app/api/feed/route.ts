@@ -59,6 +59,10 @@ export async function GET(request: Request) {
         limit,
         totalPages: Math.ceil(total / limit)
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0'
+      }
     });
 
   } catch (error) {
@@ -89,6 +93,10 @@ export async function GET(request: Request) {
           totalPages: Math.ceil(filtered.length / limit)
         },
         source: 'live-agent-fallback'
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0'
+        }
       });
       
     } catch (fallbackError) {

@@ -70,20 +70,21 @@ export default function Dashboard() {
   useEffect(() => {
     const runPipeline = async () => {
       try {
-        await fetch('/api/cron/fetch');
-        // We don't await fetchFeed here directly because the reactive hook above
-        // handles the UI state. Just trigger the cron to populate DB.
+        // Trigger cron to attempt DB populate (will fail gracefully on Vercel)
+        fetch('/api/cron/fetch').catch(e => console.error(e));
+        
+        // Force the UI to pull fresh data from the API
+        await fetchFeed();
       } catch (e) {
         console.error("Pipeline error", e);
       }
     };
 
-    // Run once on load, but don't block the initial fetchFeed!
-    runPipeline();
-
+    // We don't runPipeline immediately here because fetchFeed is already called by the dependency array below.
+    // We just set up the 5 minute interval.
     const interval = setInterval(runPipeline, 300000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchFeed]);
 
   const toggleSource = (source: string) => {
     setSelectedSources(prev => 
