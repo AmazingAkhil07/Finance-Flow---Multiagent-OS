@@ -7,127 +7,14 @@ import { LivePipeline } from '@/components/pipeline/LivePipeline';
 import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Animations';
 import { useBookmarks } from '@/providers/BookmarkProvider';
 
-// PRD mock data fallback
-const mockMonthlyReports = [
-  {
-    id: 1,
-    title: "FY2026 Tech Sector Outlook & CapEx Trends",
-    summary: "An exhaustive analysis on generative AI hardware spending, margin compressions, and why semiconductor equipment manufacturers represent the highest risk-adjusted yield for the upcoming fiscal year.",
-    source: "Morningstar India",
-    url: "https://morningstar.in",
-    publishedAt: "2026-05-15T10:00:00Z",
-    readTime: "45 min read",
-    author: "Arun Kumar",
-    tags: ["Tech", "Equities"],
-    saves: 1420,
-    views: "12.4K",
-    related: ["Datacenter REITs", "Nvidia Earnings Analysis"],
-    pages: 42,
-    hasPdf: true
-  },
-  {
-    id: 2,
-    title: "Banking Consolidation Trends & NPA Cycles",
-    summary: "As interest rates peak, we analyze the structural balance sheet advantages of Tier-1 banks over NBFCs, projecting credit growth constraints going into H2 2026.",
-    source: "Value Research Online",
-    url: "https://valueresearchonline.com",
-    publishedAt: "2026-05-02T10:00:00Z",
-    readTime: "30 min read",
-    author: "Dhirendra Kumar",
-    tags: ["Banking", "Equities"],
-    saves: 890,
-    views: "8.1K",
-    related: ["PSU Banks Review", "Credit Cost Models"],
-    pages: 28,
-    hasPdf: true
-  },
-  {
-    id: 3,
-    title: "Crypto Regulation 2026: The New Framework",
-    summary: "A deep dive into the MiCA integration, stablecoin reserve requirements, and the systemic shifts pushing institutional capital towards layer-1 native assets.",
-    source: "Bitcoin Magazine",
-    url: "https://bitcoinmagazine.com",
-    publishedAt: "2026-05-10T10:00:00Z",
-    readTime: "25 min read",
-    author: "Dylan LeClair",
-    tags: ["Regulation", "Crypto"],
-    saves: 2145,
-    views: "18.2K",
-    related: ["CBDC Rollouts", "DeFi Compliance"],
-    pages: 35,
-    hasPdf: true
-  },
-  {
-    id: 4,
-    title: "Q4 FY2026 Earnings Review & Forward Guidance",
-    summary: "Aggregate earnings analysis of the S&P 500, highlighting how pricing power is deteriorating in consumer discretionary while industrials maintain record operating margins.",
-    source: "Seeking Alpha",
-    url: "https://seekingalpha.com",
-    publishedAt: "2026-04-20T10:00:00Z",
-    readTime: "60 min read",
-    author: "Alpha Insights",
-    tags: ["Macro", "Equities"],
-    saves: 3410,
-    views: "22K",
-    related: ["Consumer Staples Defensives", "Margin Analysis"],
-    pages: 54,
-    hasPdf: true
-  },
-  {
-    id: 5,
-    title: "Ethereum Rollup Economics & EIP-4844 Impact",
-    summary: "Evaluating the structural fee market changes on Layer-2 sequencers, MEV extraction, and the long-term deflationary mechanics of the ETH tokenomics model.",
-    source: "Ethereum.org",
-    url: "https://ethereum.org",
-    publishedAt: "2026-04-05T10:00:00Z",
-    readTime: "35 min read",
-    author: "Research Team",
-    tags: ["L2s", "Crypto"],
-    saves: 1820,
-    views: "15.6K",
-    related: ["Zero-Knowledge Proofs", "Staking Yields"],
-    pages: 24,
-    hasPdf: true
-  },
-  {
-    id: 6,
-    title: "Global Commodities Supercycle Thesis",
-    summary: "Analyzing supply-side constraints in base metals and the geopolitical premium on energy, driving our overweight recommendation for resource equities.",
-    source: "Value Research Online",
-    url: "https://valueresearchonline.com",
-    publishedAt: "2026-03-28T10:00:00Z",
-    readTime: "40 min read",
-    author: "Commodity Desk",
-    tags: ["Macro", "Commodities"],
-    saves: 4200,
-    views: "31K",
-    related: ["Gold Correlation Models", "Energy CapEx"],
-    pages: 62,
-    hasPdf: true
-  },
-  {
-    id: 7,
-    title: "Central Bank Liquidity Monitors: Q1 Recap",
-    summary: "A comprehensive audit of G7 balance sheet expansions and repo market dynamics, predicting the next phase of silent quantitative easing.",
-    source: "Morningstar India",
-    url: "https://morningstar.in",
-    publishedAt: "2026-03-15T10:00:00Z",
-    readTime: "50 min read",
-    author: "Macro Research Team",
-    tags: ["Macro", "Fixed Income"],
-    saves: 2890,
-    views: "19.5K",
-    related: ["Yield Curve Inversions", "Treasury Issuance"],
-    pages: 45,
-    hasPdf: true
-  }
-];
+// mockMonthlyReports fallback removed.
 
 export default function MonthlyResearch() {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeArticle, setActiveArticle] = useState<any>(null);
   const { isBookmarked, toggleBookmark } = useBookmarks();
+  const [pipelineStats, setPipelineStats] = useState<any>(null);
 
   // Filters
   const [selectedAssetClass, setSelectedAssetClass] = useState<string | null>(null);
@@ -148,16 +35,21 @@ export default function MonthlyResearch() {
             hasPdf: true
           }));
           setArticles(parsedArticles);
+          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
         } else {
-          setArticles(mockMonthlyReports);
+          setArticles([]);
         }
       } catch (err) {
-        setArticles(mockMonthlyReports);
+        setArticles([]);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchMonthly();
+    const interval = setInterval(fetchMonthly, 300000); // 5 min auto refresh
+    
+    return () => clearInterval(interval);
   }, []);
 
   const toggleSave = (e: React.MouseEvent, article: any) => {
@@ -480,8 +372,8 @@ export default function MonthlyResearch() {
         </AnimatePresence>
       </main>
 
-      {/* Monthly Orchestrator Panel */}
-      <LivePipeline variant="monthly" />
+      {/* Renders the actual agent pipeline side-panel */}
+      <LivePipeline variant="monthly" stats={pipelineStats} />
     </>
   );
 }

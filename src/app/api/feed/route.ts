@@ -92,6 +92,11 @@ export async function GET(request: Request) {
           limit,
           totalPages: Math.ceil(filtered.length / limit)
         },
+        pipelineStats: {
+          fetch: rawData.length,
+          dedup: rawData.length - uniqueData.length,
+          class: classifiedData.length
+        },
         source: 'live-agent-fallback'
       }, {
         headers: {

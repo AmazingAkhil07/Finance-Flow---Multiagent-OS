@@ -5,34 +5,13 @@ import { Rss, Filter, Tag, FileText, CheckCircle2, Database, Brain, Activity, Sp
 
 interface LivePipelineProps {
   variant?: 'daily' | 'deep-dive' | 'monthly';
+  stats?: { fetch: number; dedup: number; class: number } | null;
 }
 
-export function LivePipeline({ variant = 'daily' }: LivePipelineProps) {
+export function LivePipeline({ variant = 'daily', stats = null }: LivePipelineProps) {
   const [activeStep, setActiveStep] = useState(0);
-  const [counts, setCounts] = useState({ fetch: 0, dedup: 0, class: 0 });
-  const [isSyncing, setIsSyncing] = useState(true);
 
-  // Poll backend for real stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/stats');
-        const json = await res.json();
-        if (json.success) {
-          setCounts(json.data.pipeline);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    fetchStats();
-    // Poll every 10 seconds for real-time updates
-    const pollInterval = setInterval(fetchStats, 10000);
-    return () => clearInterval(pollInterval);
-  }, []);
+  const currentStats = stats || { fetch: 0, dedup: 0, class: 0 };
 
   // Simulate pipeline moving for UI activity indicator
   useEffect(() => {
@@ -44,22 +23,22 @@ export function LivePipeline({ variant = 'daily' }: LivePipelineProps) {
 
   const stepsConfig = {
     'daily': [
-      { id: 0, name: 'FETCHER', icon: Rss, stat: `${counts.fetch} articles`, latency: '12.4s' },
-      { id: 1, name: 'DEDUP', icon: Filter, stat: `${counts.dedup} removed`, latency: '0.3s' },
-      { id: 2, name: 'CLASSIFIER', icon: Tag, stat: `${counts.class} tagged`, latency: '1.8s' },
-      { id: 3, name: 'SUMMARISER', icon: FileText, stat: 'Processing', latency: '4.2s' }
+      { id: 0, name: 'FETCHER', icon: Rss, stat: `${currentStats.fetch} raw docs`, latency: '1.2s' },
+      { id: 1, name: 'DEDUP', icon: Filter, stat: `${currentStats.dedup} removed`, latency: '0.1s' },
+      { id: 2, name: 'CLASSIFIER', icon: Tag, stat: `${currentStats.class} tagged`, latency: '0.4s' },
+      { id: 3, name: 'SUMMARISER', icon: FileText, stat: 'Processing', latency: 'live' }
     ],
     'deep-dive': [
-      { id: 0, name: 'SCRAPER', icon: Database, stat: `40+ sources`, latency: '45.1s' },
-      { id: 1, name: 'CROSS-REF', icon: Filter, stat: `${counts.fetch} verified`, latency: '12.3s' },
-      { id: 2, name: 'SYNTHESIS', icon: Brain, stat: `${counts.class} parsed`, latency: '24.8s' },
-      { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Synthesizing', latency: '8.2s' }
+      { id: 0, name: 'SCRAPER', icon: Database, stat: `${currentStats.fetch} raw docs`, latency: '2.4s' },
+      { id: 1, name: 'CROSS-REF', icon: Filter, stat: `${currentStats.dedup} removed`, latency: '0.5s' },
+      { id: 2, name: 'SYNTHESIS', icon: Brain, stat: `${currentStats.class} parsed`, latency: '1.2s' },
+      { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Synthesizing', latency: 'live' }
     ],
     'monthly': [
-      { id: 0, name: 'DATA MINER', icon: Database, stat: `Macro trends`, latency: '52.1s' },
-      { id: 1, name: 'PEER REVIEW', icon: Brain, stat: `Risk analysis`, latency: '34.3s' },
-      { id: 2, name: 'COMPILER', icon: FileText, stat: `Structuring Report`, latency: '48.8s' },
-      { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Finalizing', latency: '14.2s' }
+      { id: 0, name: 'DATA MINER', icon: Database, stat: `${currentStats.fetch} raw docs`, latency: '3.1s' },
+      { id: 1, name: 'PEER REVIEW', icon: Brain, stat: `${currentStats.dedup} removed`, latency: '1.2s' },
+      { id: 2, name: 'COMPILER', icon: FileText, stat: `${currentStats.class} structured`, latency: '2.8s' },
+      { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Finalizing', latency: 'live' }
     ]
   };
 
@@ -94,7 +73,7 @@ export function LivePipeline({ variant = 'daily' }: LivePipelineProps) {
         <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border ${getThemeClass('bg-amber-500/10 border-amber-500/20', 'bg-teal-500/10 border-teal-500/20', 'bg-purple-500/10 border-purple-500/20')}`}>
           <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${getThemeClass('bg-amber-400', 'bg-teal-400', 'bg-purple-400')}`}></div>
           <span className={`font-space-grotesk text-[10px] tracking-wider uppercase ${getThemeClass('text-amber-400', 'text-teal-400', 'text-purple-400')}`}>
-            {isSyncing ? 'Syncing...' : 'System Running'}
+            {!stats ? 'Agent Syncing...' : 'Live System Ready'}
           </span>
         </div>
       </div>

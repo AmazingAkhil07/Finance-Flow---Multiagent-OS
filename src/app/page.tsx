@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [pipelineStats, setPipelineStats] = useState<any>(null);
   const [activeArticle, setActiveArticle] = useState<any>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [detailedSummary, setDetailedSummary] = useState<string>('');
@@ -43,6 +44,7 @@ export default function Dashboard() {
       const data = await res.json();
       if (data.success && data.data) {
         setArticles(data.data);
+        if (data.pipelineStats) setPipelineStats(data.pipelineStats);
       }
     } catch (err) {
       console.error("Feed error:", err);
@@ -242,7 +244,8 @@ export default function Dashboard() {
           )}
         </main>
 
-      <LivePipeline />
+      {/* Renders the actual agent pipeline side-panel */}
+      <LivePipeline variant="daily" stats={pipelineStats} />
 
       {/* Summarizer Modal */}
       <AnimatePresence>

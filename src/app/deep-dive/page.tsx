@@ -8,79 +8,7 @@ import { Compass, BookmarkCheck, Bookmark, Clock, ExternalLink, Eye, ArrowRight,
 
 // We will fetch these dynamically in the component now instead of using mock data.
 
-// Upcoming articles to simulate multi-agent live generation or fallback if DB is empty
-const upcomingArticles = [
-  {
-    id: 101,
-    title: "Understanding P/E Ratios: The Complete Guide",
-    summary: "A comprehensive deep dive into Price-to-Earnings ratios, how to interpret them across different sectors, and when they might be misleading for value investors.",
-    source: "Zerodha Varsity",
-    url: "https://zerodha.com/varsity/chapter/price-to-earnings-ratio/",
-    publishedAt: new Date().toISOString(),
-    readTime: "25 min read",
-    author: "Nithin Kamath",
-    tags: ["Fundamental Analysis", "Valuation", "Beginner"],
-    saves: 342,
-    views: "2.3K",
-    related: ["PEG Ratios Explained", "Value Trap Analysis"]
-  },
-  {
-    id: 102,
-    title: "Tech Sector Analysis: FY2026 Outlook",
-    summary: "As AI integration matures, which tech giants are positioned for the next leg of growth? An institutional perspective on earnings projections and market psychology.",
-    source: "Seeking Alpha",
-    url: "https://seekingalpha.com/",
-    publishedAt: new Date(Date.now() - 86400000).toISOString(),
-    readTime: "45 min read",
-    author: "Rajeev Ravi",
-    tags: ["Technical Analysis", "Tech Stocks", "Growth"],
-    saves: 189,
-    views: "1.1K",
-    related: ["AI CapEx Trends", "Semiconductor Cycle"]
-  },
-  {
-    id: 103,
-    title: "The Psychology of Market Cycles",
-    summary: "Understanding fear, greed, and the behavioral economics driving current market volatility. How retail sentiment diverges from institutional positioning.",
-    source: "MarketWatch",
-    url: "https://www.marketwatch.com/",
-    publishedAt: new Date(Date.now() - 172800000).toISOString(),
-    readTime: "15 min read",
-    author: "Sarah Jenkins",
-    tags: ["Market Psychology", "Behavioral Finance"],
-    saves: 521,
-    views: "4.5K",
-    related: ["VIX Analysis", "Sentiment Indicators"]
-  },
-  {
-    id: 104,
-    title: "DeFi Protocols: Risk Assessment Framework",
-    summary: "An analytical approach to evaluating smart contract risks, tokenomics, and liquidity depth in emerging decentralized finance primitives.",
-    source: "The Block",
-    url: "https://www.theblock.co/",
-    publishedAt: new Date(Date.now() - 259200000).toISOString(),
-    readTime: "35 min read",
-    author: "Alex Thompson",
-    tags: ["Crypto", "DeFi", "Risk Management"],
-    saves: 276,
-    views: "1.8K",
-    related: ["L2 Solutions", "Yield Farming Mechanics"]
-  },
-  {
-    id: 105,
-    title: "Mutual Fund vs Direct Equity: A 10-Year Review",
-    summary: "A data-driven comparison of returns, tax implications, and expense ratios between top-performing mutual funds and direct stock picking.",
-    source: "Value Research Online",
-    url: "https://www.valueresearchonline.com/",
-    publishedAt: new Date(Date.now() - 345600000).toISOString(),
-    readTime: "20 min read",
-    author: "Dhirendra Kumar",
-    tags: ["Fundamental", "Mutual Funds", "Investing"],
-    saves: 412,
-    views: "3.2K",
-    related: ["Index Funds Strategy", "Tax Harvesting"]
-  }
-];
+// upcomingArticles mock removed for real data usage
 
 import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Animations';
 
@@ -90,6 +18,7 @@ export default function DeepDive() {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'live' | 'vault'>('live');
+  const [pipelineStats, setPipelineStats] = useState<any>(null);
   
   // State for article reading modal
   const [activeArticle, setActiveArticle] = useState<any>(null);
@@ -117,36 +46,22 @@ export default function DeepDive() {
             related: ["Further Analysis Available", "Historical Context"] // mock related for now
           }));
           setArticles(parsedArticles);
+          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
         } else {
-          // If no articles yet, use upcoming as a fallback for UI demonstration
-          setArticles(upcomingArticles);
+          setArticles([]);
         }
       } catch (err) {
         console.error(err);
-        setArticles(upcomingArticles);
+        setArticles([]);
       } finally {
         setLoading(false);
       }
     };
     
     fetchDeepDives();
-
-    // Simulate Agent Auto-Update Live Feed
-    let queue = [...upcomingArticles];
-    const liveUpdateInterval = setInterval(() => {
-      if (queue.length > 0) {
-        const nextArticle = queue.shift();
-        if (nextArticle) {
-          setArticles(prev => [nextArticle, ...prev]);
-        }
-      } else {
-        clearInterval(liveUpdateInterval);
-      }
-    }, 600000); // 10 minutes per auto-update
-
-    return () => {
-      clearInterval(liveUpdateInterval);
-    };
+    const interval = setInterval(fetchDeepDives, 300000); // 5 min live update
+    
+    return () => clearInterval(interval);
   }, []);
 
   const toggleSave = (e: React.MouseEvent, article: any) => {
@@ -495,7 +410,7 @@ export default function DeepDive() {
       </main>
 
       {/* Renders the actual agent pipeline side-panel with deep-dive variant */}
-      <LivePipeline variant="deep-dive" />
+      <LivePipeline variant="deep-dive" stats={pipelineStats} />
     </>
   );
 }
