@@ -262,11 +262,13 @@ function getGeneratedArticles(): RawArticle[] {
 }
 
 export async function fetchAllFeeds(): Promise<RawArticle[]> {
-  const articles: RawArticle[] = [];
+  const allArticles: RawArticle[] = [];
 
-  for (const source of SOURCES) {
+  // Fetch all feeds in parallel to prevent Vercel Serverless timeouts (10s max)
+  const fetchPromises = SOURCES.map(async (source) => {
     try {
       const feed = await parser.parseURL(source.url);
+      const sourceArticles: RawArticle[] = [];
       
       for (const item of feed.items) {
         if (!item.title || !item.link) continue;
@@ -278,7 +280,7 @@ export async function fetchAllFeeds(): Promise<RawArticle[]> {
           cleanSummary = cleanSummary.substring(0, 247) + '...';
         }
 
-        articles.push({
+        sourceArticles.push({
           title: item.title,
           sourceURL: item.link,
           source: source.name,
@@ -288,13 +290,18 @@ export async function fetchAllFeeds(): Promise<RawArticle[]> {
           category: source.category
         });
       }
+      return sourceArticles;
     } catch (error) {
       console.error(`Failed to fetch feed: ${source.name}`, error);
+      return []; // Return empty array on failure so Promise.all doesn't crash
     }
-  }
+  });
+
+  const results = await Promise.all(fetchPromises);
+  results.forEach(articles => allArticles.push(...articles));
 
   // Inject high-quality generated articles
-  articles.push(...getGeneratedArticles());
+  allArticles.push(...getGeneratedArticles());
 
-  return articles;
+  return allArticles;
 }
