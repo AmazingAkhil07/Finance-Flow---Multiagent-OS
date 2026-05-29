@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export function MorningBrief() {
   const [topSignals, setTopSignals] = useState<any[]>([]);
+  const [tickerData, setTickerData] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,21 @@ export function MorningBrief() {
         console.error("Failed to load signals", err);
       }
     };
+
+    const fetchTickerData = async () => {
+      try {
+        const res = await fetch('/api/ticker');
+        const data = await res.json();
+        if (data.success && data.data) {
+          setTickerData(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load ticker", err);
+      }
+    };
+
     fetchTopSignals();
+    fetchTickerData();
   }, []);
 
   const handleDismiss = () => {
@@ -33,15 +49,37 @@ export function MorningBrief() {
     setIsVisible(false);
   };
 
-  // Use current date to deterministically mock global snapshot so it changes daily
-  const seed = new Date().getDate();
-  const dow = 44000 + (seed * 15);
-  const dowChange = seed % 2 === 0 ? `+0.${seed % 9}%` : `-0.${seed % 9}%`;
+  const getTicker = (symbol: string) => {
+    return tickerData.find(t => t.symbol === symbol) || { value: 0, change: 0, isDollar: false };
+  };
+
+  const formatPrice = (value: number, isDollar: boolean) => {
+    if (value === 0) return '---';
+    return isDollar 
+      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+      : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
+  };
+
+  const formatChange = (change: number) => {
+    if (change === 0) return '0.00%';
+    const prefix = change > 0 ? '+' : '';
+    return `${prefix}${change.toFixed(2)}%`;
+  };
 
   if (!isVisible) return null;
 
+  const btc = getTicker('BTC');
+  const aapl = getTicker('AAPL');
+  const nifty = getTicker('NIFTY');
+  const gold = getTicker('GOLD');
+
   return (
-    <div className="relative glass-panel rounded-xl overflow-hidden mb-8 border-amber-400/30 shrink-0">
+    <motion.div 
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="relative glass-panel rounded-xl overflow-hidden mb-8 border-amber-400/30 shrink-0"
+    >
       <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-600"></div>
       
       <div className="p-5 flex flex-col gap-4">
@@ -51,7 +89,7 @@ export function MorningBrief() {
             <h2 className="text-amber-400 font-space-grotesk font-bold tracking-wider text-sm">MORNING BRIEF</h2>
             <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse"></div>
             <span className="text-slate-400 font-space-grotesk text-xs tracking-wider">
-              {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} · 07:00 IST
+              {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} · {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
           <button 
@@ -64,10 +102,10 @@ export function MorningBrief() {
         </div>
 
         {/* 3 Columns */}
-        <div className="grid grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           
           {/* Top Headlines */}
-          <div className="flex flex-col gap-3 pr-6 border-r border-white/5">
+          <div className="flex flex-col gap-3 md:pr-6 md:border-r border-white/5">
             <h3 className="text-xs text-slate-400 font-space-grotesk tracking-wider flex items-center gap-1.5">
               <span className="text-sm">🇮🇳</span> TOP HEADLINES TODAY
             </h3>
@@ -87,33 +125,42 @@ export function MorningBrief() {
           </div>
 
           {/* Global Snapshot */}
-          <div className="flex flex-col gap-3 pr-6 border-r border-white/5">
+          <div className="flex flex-col gap-3 md:pr-6 md:border-r border-white/5">
             <h3 className="text-xs text-slate-400 font-space-grotesk tracking-wider flex items-center gap-1.5">
               <span className="text-sm">🌍</span> GLOBAL MARKET SUMMARY
             </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between font-space-grotesk text-sm">
-                <span className="text-slate-300">DOW</span>
-                <span className="text-white">{dow.toLocaleString()}</span>
-                <span className={dowChange.startsWith('+') ? "text-teal-400 flex items-center" : "text-rose-500 flex items-center"}>
-                  {dowChange.startsWith('+') ? <TrendingUp size={12} className="mr-1"/> : <TrendingDown size={12} className="mr-1"/>}
-                  {dowChange}
+                <span className="text-slate-300">NIFTY</span>
+                <span className="text-white">{formatPrice(nifty.value, false)}</span>
+                <span className={nifty.change > 0 ? "text-teal-400 flex items-center" : nifty.change < 0 ? "text-rose-500 flex items-center" : "text-slate-500 flex items-center"}>
+                  {nifty.change > 0 ? <TrendingUp size={12} className="mr-1"/> : nifty.change < 0 ? <TrendingDown size={12} className="mr-1"/> : <Minus size={12} className="mr-1" />}
+                  {formatChange(nifty.change)}
                 </span>
               </div>
               <div className="flex items-center justify-between font-space-grotesk text-sm">
-                <span className="text-slate-300">NIKKEI</span>
-                <span className="text-white">{(39000 + seed * 23).toLocaleString()}</span>
-                <span className="text-teal-400 flex items-center"><TrendingUp size={12} className="mr-1"/>+1.2%</span>
+                <span className="text-slate-300">AAPL</span>
+                <span className="text-white">{formatPrice(aapl.value, true)}</span>
+                <span className={aapl.change > 0 ? "text-teal-400 flex items-center" : aapl.change < 0 ? "text-rose-500 flex items-center" : "text-slate-500 flex items-center"}>
+                  {aapl.change > 0 ? <TrendingUp size={12} className="mr-1"/> : aapl.change < 0 ? <TrendingDown size={12} className="mr-1"/> : <Minus size={12} className="mr-1" />}
+                  {formatChange(aapl.change)}
+                </span>
               </div>
               <div className="flex items-center justify-between font-space-grotesk text-sm">
-                <span className="text-slate-300">OIL</span>
-                <span className="text-white">$85.20</span>
-                <span className="text-slate-500 flex items-center"><Minus size={12} className="mr-1"/>flat</span>
+                <span className="text-slate-300">GOLD</span>
+                <span className="text-white">{formatPrice(gold.value, true)}</span>
+                <span className={gold.change > 0 ? "text-teal-400 flex items-center" : gold.change < 0 ? "text-rose-500 flex items-center" : "text-slate-500 flex items-center"}>
+                  {gold.change > 0 ? <TrendingUp size={12} className="mr-1"/> : gold.change < 0 ? <TrendingDown size={12} className="mr-1"/> : <Minus size={12} className="mr-1" />}
+                  {formatChange(gold.change)}
+                </span>
               </div>
               <div className="flex items-center justify-between font-space-grotesk text-sm">
-                <span className="text-slate-300">DXY</span>
-                <span className="text-white">104.2</span>
-                <span className="text-rose-500 flex items-center"><TrendingDown size={12} className="mr-1"/>-0.3%</span>
+                <span className="text-slate-300">BTC</span>
+                <span className="text-white">{formatPrice(btc.value, true)}</span>
+                <span className={btc.change > 0 ? "text-teal-400 flex items-center" : btc.change < 0 ? "text-rose-500 flex items-center" : "text-slate-500 flex items-center"}>
+                  {btc.change > 0 ? <TrendingUp size={12} className="mr-1"/> : btc.change < 0 ? <TrendingDown size={12} className="mr-1"/> : <Minus size={12} className="mr-1" />}
+                  {formatChange(btc.change)}
+                </span>
               </div>
             </div>
           </div>
@@ -136,11 +183,14 @@ export function MorningBrief() {
                 <span className="font-space-grotesk text-slate-500 text-sm shrink-0">15:30</span>
                 <span className="font-inter text-sm text-slate-300 truncate">Market Close NSE/BSE</span>
               </div>
+              <p className="text-[10px] text-slate-500 italic mt-1 font-inter">
+                * Real-time economic calendar API integration planned for v1.1.
+              </p>
             </div>
           </div>
 
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
