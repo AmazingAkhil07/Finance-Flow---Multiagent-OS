@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { fetchFeeds } from '@/lib/agents/fetcher';
+import { deduplicateArticles } from '@/lib/agents/dedup';
+import { classifyArticles } from '@/lib/agents/classifier';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +62,38 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('[Feed API Error]', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch feed' }, { status: 500 });
+    console.warn('[Feed API DB Error] Falling back to Live Memory Agent Execution...', error);
+    
+    try {
+      // 1. Scout Agent: Fetch fresh data on-the-fly
+      const rawData = await fetchFeeds();
+      
+      // 2. Editor Agent: Clean up duplicates
+      const uniqueData = deduplicateArticles(rawData, []);
+      
+      // 3. Analyst Agent: Tag and categorize
+      const classifiedData = classifyArticles(uniqueData);
+      
+      // Filter based on requested category
+      const filtered = category === 'all' 
+        ? classifiedData 
+        : classifiedData.filter(a => a.category === category);
+        
+      return NextResponse.json({
+        success: true,
+        data: filtered.slice(0, limit),
+        pagination: {
+          total: filtered.length,
+          page,
+          limit,
+          totalPages: Math.ceil(filtered.length / limit)
+        },
+        source: 'live-agent-fallback'
+      });
+      
+    } catch (fallbackError) {
+      console.error('[Live Agent Fallback Error]', fallbackError);
+      return NextResponse.json({ success: false, error: 'Failed to fetch live feed' }, { status: 500 });
+    }
   }
 }
