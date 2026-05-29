@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Animations';
 
 const SOURCES_LIST = [
-  'Moneycontrol', 'Economic Times', 'ET Markets', 
+  'LiveMint', 'Economic Times', 'ET Markets', 
   'TradingView', 'Bloomberg', 'Reuters Markets', 'CoinDesk'
 ];
 

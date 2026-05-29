@@ -36,7 +36,7 @@ export interface RawArticle {
 
 export const SOURCES = [
   // Daily Feed - Core User Requested Sources
-  { name: 'Moneycontrol', url: 'https://www.moneycontrol.com/rss/MCtopnews.xml', category: 'daily' },
+  { name: 'LiveMint', url: 'https://www.livemint.com/rss/markets', category: 'daily' },
   { name: 'Economic Times', url: 'https://economictimes.indiatimes.com/rssfeeds/2146842.cms', category: 'daily' },
   { name: 'ET Markets', url: 'https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms', category: 'daily' },
   { name: 'TradingView', url: 'https://www.tradingview.com/feed/', category: 'daily' },
