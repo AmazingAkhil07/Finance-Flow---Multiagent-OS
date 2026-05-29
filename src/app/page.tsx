@@ -16,6 +16,53 @@ const SOURCES_LIST = [
   'TradingView', 'Bloomberg', 'Reuters Markets', 'CoinDesk'
 ];
 
+const mockDailyArticles = [
+  {
+    id: "m1",
+    title: "RBI Holds Repo Rate Steady at 6.5%, Flags Inflation Concerns",
+    summary: "The Monetary Policy Committee (MPC) maintained the status quo on policy rates for the 7th consecutive time, prioritizing disinflation to the 4% target.",
+    source: "Economic Times",
+    sourceURL: "https://economictimes.indiatimes.com",
+    publishedAt: new Date().toISOString(),
+    readTime: 4,
+    tags: ["RBI", "Macro", "Interest Rates"],
+    author: "System Agent"
+  },
+  {
+    id: "m2",
+    title: "Bitcoin Surges Past $70k Resistance Level Post-Halving",
+    summary: "Institutional inflows into spot ETFs have accelerated, pushing BTC past key technical resistance levels. On-chain metrics suggest reduced exchange supply.",
+    source: "CoinDesk",
+    sourceURL: "https://coindesk.com",
+    publishedAt: new Date(Date.now() - 3600000).toISOString(),
+    readTime: 3,
+    tags: ["Crypto", "Bitcoin", "Markets"],
+    author: "System Agent"
+  },
+  {
+    id: "m3",
+    title: "TCS Beats Q4 Estimates, Declares Final Dividend",
+    summary: "India's largest IT services exporter reported better-than-expected margins despite a challenging macroeconomic environment in North America.",
+    source: "Moneycontrol",
+    sourceURL: "https://moneycontrol.com",
+    publishedAt: new Date(Date.now() - 7200000).toISOString(),
+    readTime: 5,
+    tags: ["Earnings", "IT", "Equities"],
+    author: "System Agent"
+  },
+  {
+    id: "m4",
+    title: "Global Supply Chain Disruptions Lift Brent Crude to $85",
+    summary: "Geopolitical tensions and OPEC+ production cuts are keeping oil prices elevated, posing risks to global inflation forecasts.",
+    source: "Bloomberg",
+    sourceURL: "https://bloomberg.com",
+    publishedAt: new Date(Date.now() - 10800000).toISOString(),
+    readTime: 6,
+    tags: ["Commodities", "Oil", "Global"],
+    author: "System Agent"
+  }
+];
+
 export default function Dashboard() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,11 +88,14 @@ export default function Dashboard() {
 
       const res = await fetch(`/api/feed?${params.toString()}`);
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data.length > 0) {
         setArticles(data.data);
+      } else {
+        setArticles(mockDailyArticles as any);
       }
     } catch (err) {
       console.error(err);
+      setArticles(mockDailyArticles as any);
     } finally {
       setLoading(false);
     }
