@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Animations';
 
 const SOURCES_LIST = [
-  'LiveMint', 'Economic Times', 'ET Markets', 
+  'Moneycontrol', 'Economic Times Markets', 'ET Markets', 
   'TradingView', 'Bloomberg', 'Reuters Markets', 'CoinDesk'
 ];
 
@@ -40,7 +40,7 @@ export default function Dashboard() {
         params.append('sources', selectedSources.join(','));
       }
 
-      const res = await fetch(`/api/feed?${params.toString()}`);
+      const res = await fetch(`/api/feed?${params.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success && data.data) {
         setArticles(data.data);
@@ -53,15 +53,8 @@ export default function Dashboard() {
     }
   }, [search, selectedTag, selectedSources]);
 
-  // Dynamic tags extraction
-  const TRENDING_TAGS = Array.from(new Set(articles.flatMap((a: any) => {
-    try {
-      const t = typeof a.tags === 'string' ? JSON.parse(a.tags) : a.tags;
-      return Array.isArray(t) ? t : [];
-    } catch {
-      return [];
-    }
-  }))).slice(0, 7);
+  // Dynamic tags extraction fallback if needed, but user requested specific trending tags
+  const TRENDING_TAGS = ['RBI', 'Nifty', 'Banking', 'Crypto', 'IPO'];
 
   // 1. Reactive UI Updates (Instant filtering)
   useEffect(() => {
@@ -232,8 +225,8 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8 perspective-1000 relative z-10">
-              {articles.map((article: any) => (
-                <ArticleCard key={article.id} article={article} onClick={handleArticleClick} />
+              {articles.map((article: any, index: number) => (
+                <ArticleCard key={article.id || `fallback-${index}`} article={article} onClick={handleArticleClick} />
               ))}
               {articles.length === 0 && (
                 <div className="col-span-2 text-center py-10 text-slate-500 font-inter">

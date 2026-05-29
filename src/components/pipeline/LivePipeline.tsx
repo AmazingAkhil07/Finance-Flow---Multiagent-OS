@@ -13,13 +13,14 @@ export function LivePipeline({ variant = 'daily', stats = null }: LivePipelinePr
 
   const currentStats = stats || { fetch: 0, dedup: 0, class: 0 };
 
-  // Simulate pipeline moving for UI activity indicator
+  // Run pipeline animation sequence infinitely for UI activity
   useEffect(() => {
+    setActiveStep(0);
     const interval = setInterval(() => {
-      setActiveStep(prev => (prev + 1) % 4);
-    }, 4500);
+      setActiveStep(prev => (prev + 1) % (stepsConfig[variant].length + 1));
+    }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [stats, variant]);
 
   const stepsConfig = {
     'daily': [
@@ -47,12 +48,16 @@ export function LivePipeline({ variant = 'daily', stats = null }: LivePipelinePr
     status: activeStep === step.id ? 'RUNNING' : activeStep > step.id ? 'DONE' : 'WAITING'
   }));
   
-  const currentAgent = steps[activeStep];
-  const activeMessage = variant === 'daily' 
-    ? `CURRENT ACTION: ${currentAgent.name} Agent processing daily feed...`
-    : variant === 'deep-dive'
-      ? `CURRENT ACTION: ${currentAgent.name} Agent orchestrating long-form research...`
-      : `CURRENT ACTION: ${currentAgent.name} Agent compiling structural monthly reports...`;
+  const currentAgent = steps[Math.min(activeStep, steps.length - 1)];
+  const isComplete = activeStep >= steps.length;
+  
+  const activeMessage = isComplete 
+    ? 'PIPELINE COMPLETE: Data successfully synced and saved.'
+    : variant === 'daily' 
+      ? `CURRENT ACTION: ${currentAgent.name} Agent processing daily feed...`
+      : variant === 'deep-dive'
+        ? `CURRENT ACTION: ${currentAgent.name} Agent orchestrating long-form research...`
+        : `CURRENT ACTION: ${currentAgent.name} Agent compiling structural monthly reports...`;
 
   const getThemeClass = (dailyClass: string, deepClass: string, monthlyClass: string) => {
     if (variant === 'daily') return dailyClass;

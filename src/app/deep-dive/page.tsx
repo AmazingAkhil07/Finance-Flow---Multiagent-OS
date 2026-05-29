@@ -59,7 +59,7 @@ export default function DeepDive() {
     };
     
     fetchDeepDives();
-    const interval = setInterval(fetchDeepDives, 300000); // 5 min live update
+    const interval = setInterval(fetchDeepDives, 1800000); // 30 min update
     
     return () => clearInterval(interval);
   }, []);
