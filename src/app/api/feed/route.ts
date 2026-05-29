@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { fetchFeeds } from '@/lib/agents/fetcher';
-import { deduplicateArticles } from '@/lib/agents/dedup';
+import { fetchAllFeeds } from '@/lib/agents/fetcher';
+import { dedupArticles } from '@/lib/agents/dedup';
 import { classifyArticles } from '@/lib/agents/classifier';
 
 export const dynamic = 'force-dynamic';
@@ -66,10 +66,10 @@ export async function GET(request: Request) {
     
     try {
       // 1. Scout Agent: Fetch fresh data on-the-fly
-      const rawData = await fetchFeeds();
+      const rawData = await fetchAllFeeds();
       
       // 2. Editor Agent: Clean up duplicates
-      const uniqueData = deduplicateArticles(rawData, []);
+      const uniqueData = dedupArticles(rawData, []);
       
       // 3. Analyst Agent: Tag and categorize
       const classifiedData = classifyArticles(uniqueData);
