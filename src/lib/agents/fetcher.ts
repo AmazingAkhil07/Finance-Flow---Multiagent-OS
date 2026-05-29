@@ -36,27 +36,26 @@ export interface RawArticle {
 
 export const SOURCES = [
   // Daily Feed - Core User Requested Sources
-  { name: 'Moneycontrol', url: 'MOCK_MONEYCONTROL', category: 'daily' },
+  { name: 'Moneycontrol', url: 'https://news.google.com/rss/search?q=site:moneycontrol.com+markets', category: 'daily' },
   { name: 'Economic Times Markets', url: 'https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms', category: 'daily' },
-  { name: 'ET Markets', url: 'https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms', category: 'daily' },
-  { name: 'TradingView', url: 'https://www.tradingview.com/feed/', category: 'daily' },
+  { name: 'TradingView', url: 'https://news.google.com/rss/search?q=site:tradingview.com+news', category: 'daily' },
   { name: 'Bloomberg', url: 'https://finance.yahoo.com/news/rss', category: 'daily' }, // Proxy for Bloomberg
-  { name: 'Reuters Markets', url: 'https://www.reutersagency.com/feed/?best-topics=business-finance&type=rx', category: 'daily' },
+  { name: 'Reuters', url: 'https://news.google.com/rss/search?q=site:reuters.com+finance', category: 'daily' },
   { name: 'CoinDesk', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', category: 'daily' },
   
-  // Deep Dive
-  { name: 'Seeking Alpha', url: 'https://feeds.seekingalpha.com/feed.xml', category: 'deep-dive' },
+  // Deep Dive - Long form analysis
+  { name: 'Seeking Alpha', url: 'https://news.google.com/rss/search?q=site:seekingalpha.com+analysis', category: 'deep-dive' },
   { name: 'MarketWatch', url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'deep-dive' },
-  { name: 'The Block', url: 'https://www.theblock.co/rss', category: 'deep-dive' },
-  { name: 'Zerodha Varsity', url: 'MOCK_VARSITY', category: 'deep-dive' }, // Will be mocked
-  { name: 'Value Research Online', url: 'MOCK_VRO', category: 'deep-dive' }, // Will be mocked
+  { name: 'CoinTelegraph', url: 'https://cointelegraph.com/rss', category: 'deep-dive' },
+  { name: 'Livemint Premium', url: 'https://www.livemint.com/rss/markets', category: 'deep-dive' },
+  { name: 'WSJ Markets', url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'deep-dive' },
   
-  // Monthly Research
-  { name: 'Morningstar India', url: 'MOCK_MORNINGSTAR', category: 'monthly' }, // Will be mocked
-  { name: 'Value Research Online', url: 'MOCK_VRO_MONTHLY', category: 'monthly' }, // Will be mocked
-  { name: 'Seeking Alpha', url: 'https://feeds.seekingalpha.com/feed.xml', category: 'monthly' },
-  { name: 'Bitcoin Magazine', url: 'https://bitcoinmagazine.com/.rss/full/', category: 'monthly' },
-  { name: 'Ethereum.org', url: 'https://blog.ethereum.org/feed.xml', category: 'monthly' },
+  // Monthly Research - Macro & Funds
+  { name: 'Morningstar', url: 'https://news.google.com/rss/search?q=site:morningstar.com+outlook', category: 'monthly' },
+  { name: 'Value Research', url: 'https://news.google.com/rss/search?q=site:valueresearchonline.com+funds', category: 'monthly' },
+  { name: 'Seeking Alpha Macro', url: 'https://news.google.com/rss/search?q=site:seekingalpha.com+macro', category: 'monthly' },
+  { name: 'Bitcoin Magazine', url: 'https://news.google.com/rss/search?q=site:bitcoinmagazine.com', category: 'monthly' },
+  { name: 'CNBC Investing', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?profile=120000000&id=10000664', category: 'monthly' },
 ];
 
 // Mock data completely removed. Real live fetch only.
@@ -67,11 +66,6 @@ export async function fetchAllFeeds(): Promise<RawArticle[]> {
   // Fetch all feeds in parallel to prevent Vercel Serverless timeouts (10s max)
   const fetchPromises = SOURCES.map(async (source) => {
     try {
-      if (source.url.startsWith('MOCK_')) {
-        // Generate mock data for sources without RSS
-        return generateMockArticles(source);
-      }
-
       const feed = await parser.parseURL(source.url);
       const sourceArticles: RawArticle[] = [];
       
@@ -105,49 +99,15 @@ export async function fetchAllFeeds(): Promise<RawArticle[]> {
       }
       return sourceArticles;
     } catch (error) {
-      console.error(`Failed to fetch feed: ${source.name}`, error);
-      // Fallback if network fails so UI is still populated
-      return generateMockArticles(source);
+      console.error(`Failed to fetch real feed from ${source.name} (${source.url}):`, error);
+      // We explicitly return an empty array on failure instead of generating mocks, 
+      // ensuring 100% of the dashboard data is real, sourced market intelligence.
+      return [];
     }
   });
 
   const results = await Promise.all(fetchPromises);
-  results.forEach(articles => allArticles.push(...articles));
+  results.forEach((articles: RawArticle[]) => allArticles.push(...articles));
 
   return allArticles;
-}
-
-function generateMockArticles(source: {name: string, category: string}): RawArticle[] {
-  const mockTitles: any = {
-    'Zerodha Varsity': ['Understanding P/E Ratios: The Complete Guide', 'Options Trading for Beginners', 'Technical Analysis: Candlestick Patterns'],
-    'Value Research Online': ['Top 5 Mutual Funds to Watch in FY2026', 'Decoding the Mid-Cap Rally', 'Should You Invest in Index Funds?'],
-    'Morningstar India': ['Quarterly Equity Market Outlook', 'Global Tech Sector Analysis', 'Fixed Income: Navigating Rate Cuts'],
-    'Seeking Alpha': ['Tech Sector Analysis: FY2026 Outlook', 'Dividend Kings to Hold Forever', 'AI Chips: The Next Frontier'],
-    'Moneycontrol': ['RBI Cuts Repo Rate by 25bps to 6.25%', 'Nifty Hits Record High Amid Global Rally', 'Banking Stocks Surge After Q3 Earnings'],
-    'Economic Times Markets': ['FIIs remain net buyers in Indian equities', 'Sensex breaches new resistance levels', 'Top 5 Midcap stocks to watch today'],
-    'ET Markets': ['Market breadth remains positive', 'Options data suggests bullish momentum', 'Auto sales data triggers sector rally'],
-    'TradingView': ['BTC/USD forms golden cross pattern', 'NIFTY 50 technical analysis update', 'Key support levels holding for major indices'],
-    'Bloomberg': ['Global markets rally on fed signals', 'Oil prices stabilize after inventory draw', 'Asian markets open higher on tech rally'],
-    'Reuters Markets': ['European central bank maintains rates', 'Supply chain constraints easing globally', 'Currency markets react to non-farm payrolls'],
-    'CoinDesk': ['Ethereum layer-2 TVL hits all-time high', 'Institutional inflows into Bitcoin ETFs', 'Regulatory clarity expected for DeFi tokens'],
-  };
-
-  const titles = mockTitles[source.name] || [
-    `Market Analysis by ${source.name}`, 
-    `Key Insights from ${source.name}`, 
-    `Deep Dive: Trends tracked by ${source.name}`
-  ];
-
-  return titles.map((title: string, i: number) => ({
-    title,
-    sourceURL: `https://www.google.com/search?q=${encodeURIComponent(title + " " + source.name)}`,
-    source: source.name,
-    summary: `This is an autonomously generated summary of "${title}". The content focuses on market trends, institutional flows, and macroeconomic factors. Read the full article to understand the deep-dive analysis provided by ${source.name}.`,
-    author: source.name === 'Zerodha Varsity' ? 'Nithin Kamath' : (source.name === 'Value Research Online' ? 'Dhirendra Kumar' : 'Expert Analyst'),
-    publishedAt: new Date(Date.now() - (source.category === 'daily' ? Math.random() * 1200000 : Math.random() * 86400000 * 7)), // daily within 20 mins, others within 7 days
-    category: source.category,
-    views: Math.floor(Math.random() * 5000) + 100,
-    saves: Math.floor(Math.random() * 500) + 10,
-    readTime: source.category === 'daily' ? 3 : (source.category === 'deep-dive' ? 25 : 45)
-  }));
 }

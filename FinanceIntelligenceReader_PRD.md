@@ -1,12 +1,17 @@
 # PRODUCT REQUIREMENTS DOCUMENT
 ## FinanceFlow - Multi-Source Finance Intelligence Reader
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** May 2026  
-**Status:** Ready for Development  
+**Status:** In Active Development  
 **Target Users:** Beginner traders, Stock learners, Investors, Finance enthusiasts  
 **UI Design Tool:** Stitch MCP  
-**Architecture:** Pseudo Multi-Agent (MVP) → AI Agent Orchestration (v1.1+)
+**Architecture:** Pseudo Multi-Agent (MVP) → PostgreSQL + Real-Time APIs (v1.2)
+
+### 🚀 Recent Updates (v1.2)
+- **Database Migration:** Fully migrated from local SQLite to **Neon PostgreSQL** for Vercel serverless compatibility.
+- **100% Real Data:** Completely removed mock fallback generation. Integrated robust Google News RSS aggregators to bypass strict bot protections (e.g., Seeking Alpha, Value Research).
+- **Real-Time Market Ticker:** Replaced static ticker with a live Yahoo Finance API proxy polling real-time asset data (NIFTY, SENSEX, AAPL, BTC, etc.) with a seamless, infinite CSS scroll architecture.
 
 ---
 
