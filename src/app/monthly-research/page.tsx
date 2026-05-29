@@ -24,18 +24,26 @@ export default function MonthlyResearch() {
   useEffect(() => {
     const fetchMonthly = async () => {
       try {
+        // Trigger cron to attempt DB populate and wait for it to finish
+        await fetch('/api/cron/fetch');
+        
         const res = await fetch('/api/feed?category=monthly');
         const data = await res.json();
-        if (data.success && data.data.length > 0) {
-          const parsedArticles = data.data.map((a: any) => ({
+        if (data.success) {
+          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
+          
+          if (data.data && data.data.length > 0) {
+            const parsedArticles = data.data.map((a: any) => ({
             ...a,
             tags: typeof a.tags === 'string' ? JSON.parse(a.tags) : (a.tags || []),
             related: ["Related Macro Context", "Prior Month Review"], 
             pages: Math.floor(Math.random() * 40) + 10,
             hasPdf: true
           }));
-          setArticles(parsedArticles);
-          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
+            setArticles(parsedArticles);
+          } else {
+            setArticles([]);
+          }
         } else {
           setArticles([]);
         }

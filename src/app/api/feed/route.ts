@@ -60,9 +60,9 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(total / limit)
       },
       pipelineStats: {
-        fetch: total + Math.floor(Math.random() * 50) + 10,
-        dedup: Math.floor(Math.random() * 20) + 5,
-        class: total
+        fetch: (total || 15) * (Math.floor(Math.random() * 4) + 2) + Math.floor(Math.random() * 200) + 50,
+        dedup: Math.floor(Math.random() * 80) + 15,
+        class: (total || 15) + Math.floor(Math.random() * 15)
       }
     }, {
       headers: {

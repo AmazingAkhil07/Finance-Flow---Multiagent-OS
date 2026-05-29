@@ -36,17 +36,25 @@ export default function DeepDive() {
   useEffect(() => {
     const fetchDeepDives = async () => {
       try {
+        // Trigger cron to attempt DB populate and wait for it to finish
+        await fetch('/api/cron/fetch');
+        
         const res = await fetch('/api/feed?category=deep-dive');
         const data = await res.json();
-        if (data.success && data.data.length > 0) {
-          // Parse tags string back to array if it comes from SQLite
-          const parsedArticles = data.data.map((a: any) => ({
+        if (data.success) {
+          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
+          
+          if (data.data && data.data.length > 0) {
+            // Parse tags string back to array if it comes from SQLite
+            const parsedArticles = data.data.map((a: any) => ({
             ...a,
             tags: typeof a.tags === 'string' ? JSON.parse(a.tags) : (a.tags || []),
             related: ["Further Analysis Available", "Historical Context"] // mock related for now
           }));
-          setArticles(parsedArticles);
-          if (data.pipelineStats) setPipelineStats(data.pipelineStats);
+            setArticles(parsedArticles);
+          } else {
+            setArticles([]);
+          }
         } else {
           setArticles([]);
         }
@@ -58,6 +66,7 @@ export default function DeepDive() {
       }
     };
     
+    // Run once immediately, then set up the interval
     fetchDeepDives();
     const interval = setInterval(fetchDeepDives, 1800000); // 30 min update
     

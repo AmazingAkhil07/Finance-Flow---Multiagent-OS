@@ -7,7 +7,14 @@ import prisma from '@/lib/db';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const globalForFetch = global as unknown as { isFetching: boolean };
+
 export async function GET() {
+  if (globalForFetch.isFetching) {
+    return NextResponse.json({ success: true, message: 'Fetch already in progress', added: 0 });
+  }
+  globalForFetch.isFetching = true;
+
   try {
     console.log('[Pipeline] Starting fetch pipeline...');
     
@@ -19,8 +26,24 @@ export async function GET() {
     const uniqueArticles = await dedupArticles(rawArticles);
     console.log(`[Pipeline] Dedup filtered out duplicates. ${uniqueArticles.length} new articles remaining.`);
 
+    // To ensure the "daily" feed always feels live (updating every 5 mins),
+    // we update the publishedAt time for existing daily articles we just fetched.
+    const existingDaily = rawArticles.filter(a => a.category === 'daily' && !uniqueArticles.find(u => u.sourceURL === a.sourceURL));
+    
+    // Deduplicate existing daily URLs so we don't update the same URL multiple times
+    const uniqueExistingDaily = Array.from(new Map(existingDaily.map(item => [item.sourceURL, item])).values());
+    
+    // Limit to 50 to prevent SQLite database locks (P1008) from massive sequential updates
+    const articlesToUpdate = uniqueExistingDaily.slice(0, 50);
+    for (const article of articlesToUpdate) {
+      await prisma.article.updateMany({
+        where: { sourceURL: article.sourceURL },
+        data: { publishedAt: article.publishedAt }
+      });
+    }
+
     if (uniqueArticles.length === 0) {
-      return NextResponse.json({ success: true, message: 'No new articles.', added: 0 });
+      return NextResponse.json({ success: true, message: 'No new articles, updated timestamps for daily feed.', added: 0 });
     }
 
     // 3. Classifier Agent
@@ -63,5 +86,7 @@ export async function GET() {
   } catch (error) {
     console.error('[Pipeline Error]', error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  } finally {
+    globalForFetch.isFetching = false;
   }
 }

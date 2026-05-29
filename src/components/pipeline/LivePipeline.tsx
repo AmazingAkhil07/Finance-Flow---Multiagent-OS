@@ -10,35 +10,51 @@ interface LivePipelineProps {
 
 export function LivePipeline({ variant = 'daily', stats = null }: LivePipelineProps) {
   const [activeStep, setActiveStep] = useState(0);
+  const [liveStats, setLiveStats] = useState({ fetch: 0, dedup: 0, class: 0 });
 
-  const currentStats = stats || { fetch: 0, dedup: 0, class: 0 };
-
-  // Run pipeline animation sequence infinitely for UI activity
   useEffect(() => {
-    setActiveStep(0);
+    if (stats) {
+      setLiveStats(stats);
+      setActiveStep(0);
+    }
+  }, [stats]);
+
+  // Run pipeline animation sequence continuously, updating numbers on each loop
+  useEffect(() => {
     const interval = setInterval(() => {
-      setActiveStep(prev => (prev + 1) % (stepsConfig[variant].length + 1));
+      setActiveStep(prev => {
+        // Wait 1 extra tick at the complete stage so the user can see it finished
+        if (prev > 4) {
+          setLiveStats(current => ({
+            fetch: current.fetch + Math.floor(Math.random() * 30) + 5,
+            dedup: current.dedup + Math.floor(Math.random() * 8) + 1,
+            class: current.class + Math.floor(Math.random() * 25) + 3
+          }));
+          return 0;
+        }
+        return prev + 1;
+      });
     }, 2000);
     return () => clearInterval(interval);
-  }, [stats, variant]);
+  }, [variant]);
 
   const stepsConfig = {
     'daily': [
-      { id: 0, name: 'FETCHER', icon: Rss, stat: `${currentStats.fetch} raw docs`, latency: '1.2s' },
-      { id: 1, name: 'DEDUP', icon: Filter, stat: `${currentStats.dedup} removed`, latency: '0.1s' },
-      { id: 2, name: 'CLASSIFIER', icon: Tag, stat: `${currentStats.class} tagged`, latency: '0.4s' },
+      { id: 0, name: 'FETCHER', icon: Rss, stat: `${liveStats.fetch} raw docs`, latency: '1.2s' },
+      { id: 1, name: 'DEDUP', icon: Filter, stat: `${liveStats.dedup} removed`, latency: '0.1s' },
+      { id: 2, name: 'CLASSIFIER', icon: Tag, stat: `${liveStats.class} tagged`, latency: '0.4s' },
       { id: 3, name: 'SUMMARISER', icon: FileText, stat: 'Processing', latency: 'live' }
     ],
     'deep-dive': [
-      { id: 0, name: 'SCRAPER', icon: Database, stat: `${currentStats.fetch} raw docs`, latency: '2.4s' },
-      { id: 1, name: 'CROSS-REF', icon: Filter, stat: `${currentStats.dedup} removed`, latency: '0.5s' },
-      { id: 2, name: 'SYNTHESIS', icon: Brain, stat: `${currentStats.class} parsed`, latency: '1.2s' },
+      { id: 0, name: 'SCRAPER', icon: Database, stat: `${liveStats.fetch} raw docs`, latency: '2.4s' },
+      { id: 1, name: 'CROSS-REF', icon: Filter, stat: `${liveStats.dedup} removed`, latency: '0.5s' },
+      { id: 2, name: 'SYNTHESIS', icon: Brain, stat: `${liveStats.class} parsed`, latency: '1.2s' },
       { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Synthesizing', latency: 'live' }
     ],
     'monthly': [
-      { id: 0, name: 'DATA MINER', icon: Database, stat: `${currentStats.fetch} raw docs`, latency: '3.1s' },
-      { id: 1, name: 'PEER REVIEW', icon: Brain, stat: `${currentStats.dedup} removed`, latency: '1.2s' },
-      { id: 2, name: 'COMPILER', icon: FileText, stat: `${currentStats.class} structured`, latency: '2.8s' },
+      { id: 0, name: 'DATA MINER', icon: Database, stat: `${liveStats.fetch} raw docs`, latency: '3.1s' },
+      { id: 1, name: 'PEER REVIEW', icon: Brain, stat: `${liveStats.dedup} removed`, latency: '1.2s' },
+      { id: 2, name: 'COMPILER', icon: FileText, stat: `${liveStats.class} structured`, latency: '2.8s' },
       { id: 3, name: 'PUBLISHER', icon: Sparkles, stat: 'Finalizing', latency: 'live' }
     ]
   };
@@ -162,14 +178,18 @@ export function LivePipeline({ variant = 'daily', stats = null }: LivePipelinePr
         })}
         
         {/* Output Node */}
-        <div className="relative flex items-start mt-4 opacity-40">
+        <div className={`relative flex items-start mt-4 transition-all duration-500 ${isComplete ? '' : 'opacity-40'}`}>
            <div className={`relative z-10 flex flex-col items-center mr-6`}>
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 text-slate-500">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-500 ${
+                isComplete
+                  ? getThemeClass('bg-amber-400/20 border-amber-400 text-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.4)]', 'bg-teal-400/20 border-teal-400 text-teal-400 shadow-[0_0_20px_rgba(45,212,191,0.4)]', 'bg-purple-400/20 border-purple-400 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.4)]')
+                  : 'bg-white/5 border-white/10 text-slate-500'
+              }`}>
                 <CheckCircle2 size={20} />
               </div>
             </div>
             <div className="flex flex-col flex-1 pt-2">
-                <h3 className="font-space-grotesk text-sm font-bold tracking-wider text-slate-500">
+                <h3 className={`font-space-grotesk text-sm font-bold tracking-wider ${isComplete ? getThemeClass('text-amber-400', 'text-teal-400', 'text-purple-400') : 'text-slate-500'}`}>
                   {variant === 'daily' ? 'OUTPUT DB' : 'KNOWLEDGE VAULT'}
                 </h3>
             </div>

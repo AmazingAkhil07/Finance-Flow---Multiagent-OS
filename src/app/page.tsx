@@ -65,8 +65,8 @@ export default function Dashboard() {
   useEffect(() => {
     const runPipeline = async () => {
       try {
-        // Trigger cron to attempt DB populate (will fail gracefully on Vercel)
-        fetch('/api/cron/fetch').catch(e => console.error(e));
+        // Trigger cron to attempt DB populate and wait for it to finish
+        await fetch('/api/cron/fetch');
         
         // Force the UI to pull fresh data from the API
         await fetchFeed();
@@ -75,8 +75,8 @@ export default function Dashboard() {
       }
     };
 
-    // We don't runPipeline immediately here because fetchFeed is already called by the dependency array below.
-    // We just set up the 5 minute interval.
+    // Run once immediately in the background, then set up the 5-minute interval
+    runPipeline();
     const interval = setInterval(runPipeline, 300000);
     return () => clearInterval(interval);
   }, [fetchFeed]);

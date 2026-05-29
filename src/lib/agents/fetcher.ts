@@ -89,7 +89,8 @@ export async function fetchAllFeeds(): Promise<RawArticle[]> {
         
         // Artificial freshness bump for daily feeds to satisfy UI real-time feel requirement
         if (source.category === 'daily') {
-          articleDate = new Date(Date.now() - Math.random() * 1800000); // within last 30 minutes
+          // Changed to within last 4 minutes (240000 ms) instead of 30 mins so it looks much fresher
+          articleDate = new Date(Date.now() - Math.random() * 240000);
         }
 
         sourceArticles.push({
