@@ -66,7 +66,19 @@ export function MorningBrief() {
     return `${prefix}${change.toFixed(2)}%`;
   };
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return (
+      <button 
+        onClick={() => {
+          localStorage.removeItem('morningBriefDismissed');
+          setIsVisible(true);
+        }}
+        className="mb-8 flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-space-grotesk hover:bg-amber-400/20 transition-colors shrink-0 w-fit"
+      >
+        <span>☀️</span> Show Morning Brief
+      </button>
+    );
+  }
 
   const btc = getTicker('BTC');
   const aapl = getTicker('AAPL');
