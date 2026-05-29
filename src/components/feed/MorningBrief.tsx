@@ -4,9 +4,16 @@ import React, { useEffect, useState } from 'react';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const FALLBACK_TICKERS = [
+  { symbol: "NIFTY", value: 24805, change: 0.57, isDollar: false },
+  { symbol: "AAPL", value: 215.00, change: 1.2, isDollar: true },
+  { symbol: "BTC", value: 70243, change: -0.74, isDollar: true },
+  { symbol: "GOLD", value: 73613, change: 0.96, isDollar: true }
+];
+
 export function MorningBrief() {
   const [topSignals, setTopSignals] = useState<any[]>([]);
-  const [tickerData, setTickerData] = useState<any[]>([]);
+  const [tickerData, setTickerData] = useState<any[]>(FALLBACK_TICKERS);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
