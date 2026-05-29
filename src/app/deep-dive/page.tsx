@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LivePipeline } from '@/components/pipeline/LivePipeline';
 import { useBookmarks } from '@/providers/BookmarkProvider';
+import { Compass, BookmarkCheck, Bookmark, Clock, ExternalLink, Eye, ArrowRight, X, Brain } from 'lucide-react';
 
 // We will fetch these dynamically in the component now instead of using mock data.
 
