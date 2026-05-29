@@ -47,9 +47,6 @@ export default function MonthlyResearch() {
     };
     
     fetchMonthly();
-    const interval = setInterval(fetchMonthly, 300000); // 5 min auto refresh
-    
-    return () => clearInterval(interval);
   }, []);
 
   const toggleSave = (e: React.MouseEvent, article: any) => {
