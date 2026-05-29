@@ -100,7 +100,7 @@ export function MorningBrief() {
           <div className="flex items-center gap-3">
             <h2 className="text-amber-400 font-space-grotesk font-bold tracking-wider text-sm">MORNING BRIEF</h2>
             <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse"></div>
-            <span className="text-slate-400 font-space-grotesk text-xs tracking-wider">
+            <span className="text-slate-400 font-space-grotesk text-xs tracking-wider hidden md:block">
               {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} · {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -117,7 +117,7 @@ export function MorningBrief() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           
           {/* Top Headlines */}
-          <div className="flex flex-col gap-3 md:pr-6 md:border-r border-white/5">
+          <div className="flex flex-col gap-3 pb-6 border-b md:pb-0 md:border-b-0 md:pr-6 md:border-r border-white/5">
             <h3 className="text-xs text-slate-400 font-space-grotesk tracking-wider flex items-center gap-1.5">
               <span className="text-sm">🇮🇳</span> TOP HEADLINES TODAY
             </h3>
@@ -137,7 +137,7 @@ export function MorningBrief() {
           </div>
 
           {/* Global Snapshot */}
-          <div className="flex flex-col gap-3 md:pr-6 md:border-r border-white/5">
+          <div className="flex flex-col gap-3 pb-6 border-b md:pb-0 md:border-b-0 md:pr-6 md:border-r border-white/5">
             <h3 className="text-xs text-slate-400 font-space-grotesk tracking-wider flex items-center gap-1.5">
               <span className="text-sm">🌍</span> GLOBAL MARKET SUMMARY
             </h3>
