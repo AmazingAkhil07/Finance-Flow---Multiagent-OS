@@ -68,8 +68,8 @@ export async function GET(request: Request) {
       // 1. Scout Agent: Fetch fresh data on-the-fly
       const rawData = await fetchAllFeeds();
       
-      // 2. Editor Agent: Clean up duplicates
-      const uniqueData = dedupArticles(rawData, []);
+      // 2. Editor Agent: Clean up duplicates (skip DB check for in-memory fallback)
+      const uniqueData = await dedupArticles(rawData, true);
       
       // 3. Analyst Agent: Tag and categorize
       const classifiedData = classifyArticles(uniqueData);

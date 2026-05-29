@@ -1,7 +1,7 @@
 import prisma from '../db';
 import { RawArticle } from './fetcher';
 
-export async function dedupArticles(articles: RawArticle[]): Promise<RawArticle[]> {
+export async function dedupArticles(articles: RawArticle[], skipDB: boolean = false): Promise<RawArticle[]> {
   if (articles.length === 0) return [];
 
   // Deduplicate within the incoming batch first to prevent unique constraint errors
@@ -12,6 +12,10 @@ export async function dedupArticles(articles: RawArticle[]): Promise<RawArticle[
       seenUrls.add(a.sourceURL);
       uniqueBatch.push(a);
     }
+  }
+
+  if (skipDB) {
+    return uniqueBatch;
   }
 
   // Extract all URLs from the fetched unique batch
