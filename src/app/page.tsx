@@ -13,6 +13,9 @@ import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Anima
 
 const SOURCES_LIST = [
   'Moneycontrol', 'Economic Times', 'ET Markets', 
+  'TradingView', 'Bloomberg', 'Reuters Markets', 'CoinDesk'
+];
+
 export default function Dashboard() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
