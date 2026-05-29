@@ -27,9 +27,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <BookmarkProvider>
-          <div className="p-6 h-screen w-full flex flex-col gap-6 overflow-hidden">
+          <div className="p-3 md:p-6 min-h-screen lg:h-screen w-full flex flex-col gap-4 md:gap-6 overflow-y-auto lg:overflow-hidden">
             <TickerBar />
-            <div className="flex-1 flex gap-6 min-h-0 relative">
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-6 min-h-0 relative">
               <Sidebar />
               {children}
             </div>

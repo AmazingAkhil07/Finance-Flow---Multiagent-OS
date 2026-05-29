@@ -82,7 +82,7 @@ export function LivePipeline({ variant = 'daily', stats = null }: LivePipelinePr
   };
 
   return (
-    <div className="glass-panel w-[320px] h-full flex flex-col shrink-0 p-5 relative overflow-hidden">
+    <div className="glass-panel w-full lg:w-[320px] h-auto lg:h-full flex flex-col shrink-0 p-5 relative overflow-hidden mt-6 lg:mt-0">
       
       {/* Background Glows for active state */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-[50px] pointer-events-none ${getThemeClass('bg-amber-500/10', 'bg-teal-500/10', 'bg-purple-500/10')}`}></div>

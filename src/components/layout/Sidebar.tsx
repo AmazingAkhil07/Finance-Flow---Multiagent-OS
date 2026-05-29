@@ -18,12 +18,12 @@ export function Sidebar() {
   const { bookmarks } = useBookmarks();
 
   return (
-    <aside className="glass-panel w-[260px] h-full flex flex-col p-4 shrink-0">
+    <aside className="glass-panel w-full lg:w-[260px] h-auto lg:h-full flex flex-col p-2 lg:p-4 shrink-0 overflow-x-auto hide-scrollbar z-50">
       
       {/* Feeds Section */}
-      <div className="mb-8 mt-2">
-        <h3 className="text-xs font-space-grotesk text-slate-400 mb-4 px-3 tracking-wider">FEEDS</h3>
-        <nav className="flex flex-col gap-1">
+      <div className="mb-0 lg:mb-8 mt-0 lg:mt-2 w-full">
+        <h3 className="hidden lg:block text-xs font-space-grotesk text-slate-400 mb-4 px-3 tracking-wider">FEEDS</h3>
+        <nav className="flex flex-row lg:flex-col gap-1 w-max lg:w-full">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const isSaved = item.name === 'Saved Documents';
@@ -53,10 +53,10 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="mb-auto"></div>
+      <div className="hidden lg:block mb-auto"></div>
 
       {/* Footer / Settings */}
-      <div className="border-t border-white/10 pt-4">
+      <div className="hidden lg:block border-t border-white/10 pt-4">
         <button suppressHydrationWarning className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all duration-300 font-inter text-sm">
           <Settings size={18} className="text-slate-400" />
           Settings
