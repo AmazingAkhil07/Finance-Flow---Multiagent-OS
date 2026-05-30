@@ -98,59 +98,101 @@ In modern retail trading, information is either fragmented, paywalled, or biased
 
 ## 🧠 Multi-Agent Orchestration Architecture
 
-The system utilizes a coordinated, sequential multi-agent pipeline designed to extract, normalize, tag, and persist data without user intervention.
+The FinanceFlow architecture utilizes a coordinated, sequential multi-agent pipeline designed to extract, normalize, classify, and persist data without user intervention. The entire pipeline is designed for serverless environments (handling execution limits, database connections, and race conditions).
+
+### 📍 Pipeline Flowchart
+
+Below is the execution flow of the background cron task (`/api/cron/fetch`) orchestrating the multi-agent pipeline:
 
 ```mermaid
 flowchart TD
-    cron[Next.js Serverless Cron Route /api/cron/fetch] --> lock{Concurrency Lock?}
-    lock -- Yes, fetching active --> skip[Exit Pipeline]
-    lock -- No, acquired lock --> fetcher[1. Fetcher Agent]
+    %% Styling Classes
+    classDef trigger fill:#ffe5e5,stroke:#ff5555,stroke-width:2px,color:#800000;
+    classDef agent fill:#fff3e6,stroke:#ffb86c,stroke-width:2px,color:#663300;
+    classDef process fill:#e6f9ff,stroke:#8be9fd,stroke-width:1.5px,color:#004d61;
+    classDef db fill:#e8ffe8,stroke:#50fa7b,stroke-width:2px,color:#004d00;
+    classDef decision fill:#f3e6ff,stroke:#bd93f9,stroke-width:2px,color:#330066;
+
+    %% Trigger & Lock Check
+    CronRoute["Next.js Serverless Cron Route<br/><code>/api/cron/fetch</code>"]:::trigger
+    LockCheck{"Concurrency Lock?"}:::decision
+    ExitPipeline["Exit Pipeline<br/>(Prevent overlap)"]:::process
     
-    subgraph Fetcher Pipeline
-        fetcher --> xml_parse[Parse XML & Google RSS Feeds in Parallel]
-        xml_parse --> normalize[Normalize Schema into RawArticle JSON]
-        normalize --> freshness[Apply Freshness Bias to Daily Feed]
+    %% Fetcher Agent Stage
+    subgraph FetcherSub ["1. Fetcher Agent (fetcher.ts)"]
+        FetcherAgent["Parallel RSS Fetcher"]:::agent
+        RSSParse["Parse RSS & Google News XML<br/>(Parallel Requests)"]:::process
+        NormalizeSchema["Normalize Schema into<br/>RawArticle JSON"]:::process
+        FreshnessBias["Apply Dynamic Freshness Bias<br/>to Daily Feed"]:::process
     end
     
-    Fetcher Pipeline --> dedup[2. Dedup Agent]
-    
-    subgraph Deduplication Engine
-        dedup --> batch_check[Deduplicate Incoming Batch In-Memory]
-        batch_check --> db_check[Validate URL Hashes against PostgreSQL]
-        db_check --> filter[Filter out Existing Articles]
+    %% Dedup Agent Stage
+    subgraph DedupSub ["2. Dedup Agent (dedup.ts)"]
+        DedupAgent["Duplicate Detection Engine"]:::agent
+        BatchDedup["Deduplicate Batch In-Memory"]:::process
+        DbUrlCheck["Validate URL Hashes against DB"]:::process
+        FilterExisting["Filter Out Existing Articles"]:::process
     end
-    
-    Deduplication Engine -- New Articles Found --> classifier[3. Classifier Agent]
-    Deduplication Engine -- No New Articles --> update_daily[Update Daily Feed timestamps in bulk]
-    
-    subgraph Classification Engine
-        classifier --> regex[RegEx-based Keyword Matching]
-        regex --> tag_assign[Assign tags: RBI, NIFTY, SENSEX, TECH, etc.]
-        tag_assign --> read_time[Estimate Read Time by Category]
+
+    %% Classifier Agent Stage
+    subgraph ClassifierSub ["3. Classifier Agent (classifier.ts)"]
+        ClassifierAgent["Taxonomy & Classification Engine"]:::agent
+        RegexMatch["RegEx Keyword Match<br/>(RBI, NIFTY, TECH, MACRO, etc.)"]:::process
+        TagAssign["Assign Category Tags"]:::process
+        ReadTime["Estimate Read Time<br/>by Category/Length"]:::process
     end
+
+    %% Database & Feed Updates
+    UpdateDaily["Update Daily Feed Timestamps<br/>(Capped at 50 sequential updates)"]:::process
+    NeonDB[("Neon PostgreSQL Database<br/>(Prisma ORM Upsert)")]:::db
+
+    %% Pipeline Flow
+    CronRoute --> LockCheck
+    LockCheck -- "Yes (Active)" --> ExitPipeline
+    LockCheck -- "No (Acquired Lock)" --> FetcherAgent
     
-    Classification Engine --> db[(4. Neon PostgreSQL DB)]
-    update_daily --> db
+    FetcherAgent --> RSSParse
+    RSSParse --> NormalizeSchema
+    NormalizeSchema --> FreshnessBias
+    
+    FreshnessBias --> BatchDedup
+    BatchDedup --> DbUrlCheck
+    DbUrlCheck --> FilterExisting
+    
+    FilterExisting -- "New Articles" --> ClassifierAgent
+    FilterExisting -- "No New Articles" --> UpdateDaily
+    
+    ClassifierAgent --> RegexMatch
+    RegexMatch --> TagAssign
+    TagAssign --> ReadTime
+    
+    ReadTime --> NeonDB
+    UpdateDaily --> NeonDB
 ```
 
-### Agent Roles
+### 👥 Agent Roles & Responsibilities
 
-1.  🕷️ **Fetcher Agent (`src/lib/agents/fetcher.ts`)**:
-    *   Fires off parallel network requests to all defined RSS feeds to prevent serverless execution timeouts (10-second limit).
-    *   Filters out invalid items and normalizes varying RSS metadata tags (e.g. `creator` vs `author`) into a unified schema.
-    *   Implements an artificial freshness delay subtraction to maintain the feel of a live, trading-floor feed.
-2.  🧹 **Dedup Agent (`src/lib/agents/dedup.ts`)**:
-    *   Performs in-memory deduplication on incoming batches.
-    *   Executes database-level queries using unique URL indexes to prevent duplicate constraint violations.
-3.  🏷️ **Classifier Agent (`src/lib/agents/classifier.ts`)**:
-    *   Analyzes the title and summary of newly fetched items.
-    *   Uses RegExp-based mapping to search for specific financial keywords (e.g. `repo rate` -> `RBI`, `gdp` -> `MACRO`).
-    *   Calculates expected read times based on text length and classification category (e.g., 2–5 minutes for Daily news, 15–30 minutes for Deep Dives).
+| Agent | Location | Main Responsibility | Input Schema | Output Schema |
+| :--- | :--- | :--- | :--- | :--- |
+| **🕷️ Fetcher Agent** | `src/lib/agents/fetcher.ts` | Resolves XML RSS and custom Google News proxy requests in parallel. Normalizes feeds. | None (Uses predefined list of 15+ feeds) | `RawArticle[]` |
+| **🧹 Dedup Agent** | `src/lib/agents/dedup.ts` | Filters duplicates across the incoming memory batch and the target database via URL mapping. | `RawArticle[]` | `RawArticle[]` (Unsaved only) |
+| **🏷️ Classifier Agent** | `src/lib/agents/classifier.ts` | Scans title & snippet text using RegExp to assign tags and dynamic reading time estimations. | `RawArticle[]` | `ClassifiedArticle[]` (Enriched) |
 
-### Orchestration & Concurrency Engine (`src/app/api/cron/fetch/route.ts`)
-*   **Concurrency Locking**: Employs a global `isFetching` lock to prevent overlapping cron triggers from executing simultaneous database sessions.
-*   **Staging / Persistence Operations**: Saves articles to Neon PostgreSQL sequentially using Prisma ORM to avoid SQLite-heritage transactional locking issues.
-*   **Daily Freshness Update**: If articles in the incoming batch are duplicates but fall under the `daily` category, the scheduler bumps their `publishedAt` timestamp (capped at 50 sequential updates per cycle) to guarantee the frontend shows real-time market updates.
+---
+
+### ⚙️ Core Orchestration Mechanisms
+
+> [!NOTE]
+> **Concurrency Locking (`globalForFetch.isFetching`)**
+> To avoid database deadlocks and double-processing overhead in serverless edge environments, a global execution lock is checked at the entry of the route. If an ingestion instance is already running, subsequent cron requests instantly exit without blocking.
+
+> [!TIP]
+> **Database Transaction Serialization**
+> While SQLite is prone to locking, Neon PostgreSQL handles concurrency gracefully. However, to prevent transactional query spikes and keep API response times stable, the route executes its Prisma ORM upserts sequentially rather than in uncontrolled parallel `Promise.all` groups.
+
+> [!IMPORTANT]
+> **Daily Feed Freshness Loop**
+> Stock traders need real-time vibes. If a duplicate article is fetched under the `daily` category, rather than throwing it away, the scheduler updates its `publishedAt` timestamp to the current fetch time (capped at 50 sequential updates per cycle). This ensures active market news stays fresh on the user's dashboard without cluttering the DB with duplicate records.
 
 ---
 
