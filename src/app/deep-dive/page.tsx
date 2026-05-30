@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LivePipeline } from '@/components/pipeline/LivePipeline';
 import { useBookmarks } from '@/providers/BookmarkProvider';
-import { Compass, BookmarkCheck, Bookmark, Clock, ExternalLink, Eye, ArrowRight, X, Brain } from 'lucide-react';
+import { Compass, BookmarkCheck, Bookmark, Clock, ExternalLink, Eye, ArrowRight, X, Brain, RefreshCw } from 'lucide-react';
 
 // We will fetch these dynamically in the component now instead of using mock data.
 
@@ -22,6 +22,10 @@ export default function DeepDive() {
   
   // State for article reading modal
   const [activeArticle, setActiveArticle] = useState<any>(null);
+  
+  // Timer state
+  const [timeToRefresh, setTimeToRefresh] = useState(1800); // 30 mins
+
 
   // Extract all unique tags dynamically, or use some standard ones for the vault
   const allTags = Array.from(new Set(articles.flatMap(a => {
@@ -73,6 +77,47 @@ export default function DeepDive() {
     return () => clearInterval(interval);
   }, []);
 
+  // Timer countdown effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeToRefresh(prev => (prev > 0 ? prev - 1 : 1800));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const manualRefresh = async () => {
+    setLoading(true);
+    setTimeToRefresh(1800);
+    try {
+      await fetch('/api/cron/fetch');
+      const res = await fetch('/api/feed?category=deep-dive');
+      const data = await res.json();
+      if (data.success) {
+        if (data.pipelineStats) setPipelineStats(data.pipelineStats);
+        if (data.data && data.data.length > 0) {
+          const parsedArticles = data.data.map((a: any) => ({
+            ...a,
+            tags: typeof a.tags === 'string' ? JSON.parse(a.tags) : (a.tags || []),
+            related: ["Further Analysis Available", "Historical Context"]
+          }));
+          setArticles(parsedArticles);
+        } else {
+          setArticles([]);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleSave = (e: React.MouseEvent, article: any) => {
     e.stopPropagation();
     toggleBookmark(article);
@@ -107,8 +152,9 @@ export default function DeepDive() {
             </motion.div>
           </div>
           
-          {/* Tabs for Live Feed vs Knowledge Vault */}
-          <div className="mt-8 flex items-center gap-4 border-b border-white/10 pb-4">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+            {/* Tabs for Live Feed vs Knowledge Vault */}
+            <div className="flex items-center gap-4">
             <button 
               onClick={() => setActiveTab('live')}
               className={`text-lg font-outfit font-bold transition-all ${activeTab === 'live' ? 'text-teal-400' : 'text-slate-500 hover:text-slate-300'}`}
@@ -121,6 +167,21 @@ export default function DeepDive() {
             >
               Knowledge Vault
             </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+              <span className="text-xs font-space-grotesk text-teal-400/80 tracking-wider">
+                NEXT FETCH IN: {formatTime(timeToRefresh)}
+              </span>
+              <button 
+                onClick={manualRefresh}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 text-xs font-bold font-space-grotesk border border-teal-500/20 transition-all"
+                title="Refresh manually"
+              >
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {/* Dynamic Tag Filter (Only show in Vault for organizing old content) */}
@@ -256,10 +317,16 @@ export default function DeepDive() {
                         </div>
                       </div>
                       
-                      <button className="flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 text-slate-900 text-sm font-bold font-space-grotesk px-5 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(45,212,191,0.3)] hover:shadow-[0_0_25px_rgba(45,212,191,0.5)] group-hover/btn">
+                      <a 
+                        href={article.url || article.sourceURL || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-400 text-slate-900 text-sm font-bold font-space-grotesk px-5 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(45,212,191,0.3)] hover:shadow-[0_0_25px_rgba(45,212,191,0.5)] group-hover/btn"
+                      >
                         Read Now 
                         <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </button>
+                      </a>
                     </div>
 
                   </div>

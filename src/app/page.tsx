@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { LivePipeline } from '@/components/pipeline/LivePipeline';
 import { MorningBrief } from '@/components/feed/MorningBrief';
 import { ArticleCard } from '@/components/feed/ArticleCard';
-import { Search, Filter as FilterIcon, Bell, X, Brain, ExternalLink } from 'lucide-react';
+import { Search, Filter as FilterIcon, Bell, X, Brain, ExternalLink, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { TypewriterText, MotionWords, ThreeDSticks } from '@/components/ui/Animations';
@@ -27,6 +27,9 @@ export default function Dashboard() {
   const [activeArticle, setActiveArticle] = useState<any>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [detailedSummary, setDetailedSummary] = useState<string>('');
+  
+  // Timer state for Daily Feed (5 mins = 300s)
+  const [timeToRefresh, setTimeToRefresh] = useState(300);
 
   const fetchFeed = useCallback(async () => {
     try {
@@ -80,6 +83,33 @@ export default function Dashboard() {
     const interval = setInterval(runPipeline, 300000);
     return () => clearInterval(interval);
   }, [fetchFeed]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeToRefresh(prev => (prev > 0 ? prev - 1 : 300));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const manualRefresh = async () => {
+    setLoading(true);
+    setTimeToRefresh(300);
+    try {
+      await fetch('/api/cron/fetch');
+      await fetchFeed();
+    } catch (e) {
+      console.error("Pipeline error", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleSource = (source: string) => {
     setSelectedSources(prev => 
@@ -213,9 +243,23 @@ export default function Dashboard() {
 
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-space-grotesk font-bold text-slate-300 tracking-wider text-sm">LATEST INTELLIGENCE</h2>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-              <span className="font-space-grotesk text-amber-400 text-xs tracking-wider uppercase">Live Sync</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-space-grotesk text-amber-400/80 tracking-wider hidden sm:block">
+                NEXT FETCH IN: {formatTime(timeToRefresh)}
+              </span>
+              <button 
+                onClick={manualRefresh}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 text-xs font-bold font-space-grotesk border border-amber-400/20 transition-all"
+                title="Refresh manually"
+              >
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                Refresh
+              </button>
+              <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span className="font-space-grotesk text-amber-400 text-xs tracking-wider uppercase">Live Sync</span>
+              </div>
             </div>
           </div>
 
