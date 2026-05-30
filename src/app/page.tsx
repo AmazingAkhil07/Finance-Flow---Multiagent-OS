@@ -87,12 +87,19 @@ export default function Dashboard() {
   // Timer countdown effect
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeToRefresh(prev => (prev > 0 ? prev - 1 : 300));
+      setTimeToRefresh(prev => {
+        if (prev <= -10) {
+          manualRefresh();
+          return 300;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
   const formatTime = (seconds: number) => {
+    if (seconds <= 0) return "NOW";
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -249,10 +256,15 @@ export default function Dashboard() {
               </span>
               <button 
                 onClick={manualRefresh}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 text-xs font-bold font-space-grotesk border border-amber-400/20 transition-all"
-                title="Refresh manually"
+                disabled={timeToRefresh > 0}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold font-space-grotesk border transition-all ${
+                  timeToRefresh > 0 
+                    ? 'bg-amber-400/5 text-amber-400/30 border-amber-400/10 cursor-not-allowed'
+                    : 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                }`}
+                title={timeToRefresh > 0 ? "Locked until next interval" : "Refresh manually"}
               >
-                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                <RefreshCw size={14} className={loading ? "animate-spin" : timeToRefresh <= 0 ? "animate-pulse" : ""} />
                 Refresh
               </button>
               <div className="h-4 w-px bg-white/10 hidden sm:block"></div>

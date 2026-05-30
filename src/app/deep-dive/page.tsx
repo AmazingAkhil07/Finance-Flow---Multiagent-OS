@@ -80,12 +80,19 @@ export default function DeepDive() {
   // Timer countdown effect
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeToRefresh(prev => (prev > 0 ? prev - 1 : 1800));
+      setTimeToRefresh(prev => {
+        if (prev <= -10) {
+          manualRefresh();
+          return 1800;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
   const formatTime = (seconds: number) => {
+    if (seconds <= 0) return "NOW";
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -175,10 +182,15 @@ export default function DeepDive() {
               </span>
               <button 
                 onClick={manualRefresh}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 text-xs font-bold font-space-grotesk border border-teal-500/20 transition-all"
-                title="Refresh manually"
+                disabled={timeToRefresh > 0}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold font-space-grotesk border transition-all ${
+                  timeToRefresh > 0 
+                    ? 'bg-teal-500/5 text-teal-400/30 border-teal-500/10 cursor-not-allowed'
+                    : 'bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border-teal-500/20 shadow-[0_0_10px_rgba(45,212,191,0.3)]'
+                }`}
+                title={timeToRefresh > 0 ? "Locked until next interval" : "Refresh manually"}
               >
-                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                <RefreshCw size={14} className={loading ? "animate-spin" : timeToRefresh <= 0 ? "animate-pulse" : ""} />
                 Refresh
               </button>
             </div>
